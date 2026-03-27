@@ -1,0 +1,121 @@
+﻿@page "/game"
+@layout MainLayout
+@rendermode InteractiveServer
+
+<PageTitle>Fun Click Game</PageTitle>
+
+<h1 class="text-center text-warning mb-4">🎯 Click the Target!</h1>
+
+<div class="game-wrapper d-flex justify-content-center flex-column align-items-center gap-3">
+
+    <!-- Game Container -->
+    <div class="game-container position-relative border border-dark rounded shadow-lg mb-3"
+         style="width: 450px; height: 450px; background: radial-gradient(circle, #ffe6e6, #ffcccc); overflow: hidden;">
+        <button class="target btn btn-danger rounded-circle position-absolute shadow"
+                style="width:50px; height:50px; top:@TargetTopPx; left:@TargetLeftPx; transition: all 0.2s ease;"
+                @onclick="HitTarget">
+        </button>
+    </div>
+
+    <!-- Score and Timer -->
+    <div class="d-flex justify-content-center gap-4 mb-2">
+        <p class="fs-5 mb-0">Score: <strong>@Score</strong></p>
+        <p class="fs-5 mb-0 text-muted">Time left: <strong>@TimeLeft</strong>s</p>
+    </div>
+
+    <!-- Username Input and Buttons -->
+    <div class="d-flex justify-content-center gap-2 mb-4">
+        <input type="text" class="form-control w-25" placeholder="Enter your name" @bind="Username" />
+        <button class="btn btn-primary" @onclick="StartGame" disabled="@GameRunning || string.IsNullOrWhiteSpace(Username)">Start</button>
+        <button class="btn btn-secondary" @onclick="ResetGame" disabled="!GameRunning && Score == 0">Reset</button>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard w-50">
+        <h4 class="text-center text-info mb-2">🏆 Leaderboard</h4>
+        <ul class="list-group">
+            @foreach (var entry in Leaderboard.OrderByDescending(e => e.Score).Take(5))
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    @entry.Username
+                    <span class="badge bg-success rounded-pill">@entry.Score</span>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    private string Username { get; set; } = string.Empty;
+    private int Score { get; set; } = 0;
+    private int TimeLeft { get; set; } = 30;
+    private bool GameRunning { get; set; } = false;
+
+    private Random random = new();
+    private int TargetTop { get; set; } = 50;
+    private int TargetLeft { get; set; } = 50;
+
+    private string TargetTopPx => $"{TargetTop}px";
+    private string TargetLeftPx => $"{TargetLeft}px";
+
+    private List<(string Username, int Score)> Leaderboard { get; set; } = new();
+
+    // Start the game without blocking the UI
+    private void StartGame()
+    {
+        if (GameRunning || string.IsNullOrWhiteSpace(Username))
+            return;
+
+        Score = 0;
+        TimeLeft = 30;
+        GameRunning = true;
+        MoveTarget();
+
+        // Run the countdown asynchronously
+        _ = RunCountdownAsync();
+    }
+
+    // Countdown in background
+    private async Task RunCountdownAsync()
+    {
+        while (TimeLeft > 0 && GameRunning)
+        {
+            await Task.Delay(1000); // wait 1 second
+            TimeLeft--;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        GameRunning = false;
+
+        // Add score to leaderboard if username exists
+        if (!string.IsNullOrWhiteSpace(Username))
+        {
+            Leaderboard.Add((Username, Score));
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HitTarget()
+    {
+        if (!GameRunning) return;
+
+        Score++;
+        MoveTarget();
+    }
+
+    private void MoveTarget()
+    {
+        TargetTop = random.Next(0, 400);
+        TargetLeft = random.Next(0, 400);
+    }
+
+    private void ResetGame()
+    {
+        Score = 0;
+        TimeLeft = 30;
+        GameRunning = false;
+        TargetTop = 50;
+        TargetLeft = 50;
+        Username = string.Empty;
+    }
+}
