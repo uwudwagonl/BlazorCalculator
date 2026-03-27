@@ -1,17 +1,79 @@
 ﻿@page "/"
+<PageTitle>Calculator</PageTitle>
+<h1>Calculator</h1>
 
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-<input id="Operator-1" type="text" />
-<input id="Operator-2" type="text" />
-<input id="Calculate" type="button" value="Calculate" />
-<select id="Select1" >
-    <option> + </option>
-    <option> - </option>
-    <option> * </option>
-    <option> / </option>
+<input id="Operator-1" @bind="Operator1Text" />
+<input id="Operator-2" @bind="Operator2Text" />
+<select id="Select1" @bind="Operator">
+    <option value="+">+</option>
+    <option value="-">-</option>
+    <option value="*">*</option>
+    <option value="/">/</option>
 </select>
-<textarea id="result" rows="2" cols="5"></textarea>
+<input id="Calculate" type="button" value="Calculate" @onclick="Calculate" />
+<textarea id="result" rows="2" cols="30" readonly value="@Result"></textarea>
+
+@code {
+    private sealed class Calculator
+    {
+        public double Add(double a, double b) => a + b;
+        public double Subtract(double a, double b) => a - b;
+        public double Multiply(double a, double b) => a * b;
+        public double Divide(double a, double b) => a / b;
+    }
+
+    private readonly Calculator calc = new();
+
+    private string Operator1Text { get; set; } = string.Empty;
+    private string Operator2Text { get; set; } = string.Empty;
+    private string Operator { get; set; } = "+";
+    private string Result { get; set; } = string.Empty;
+
+    private async Task Calculate()
+    {
+        if (!double.TryParse(Operator1Text, out var a))
+        {
+            Result = "Invalid first operand";
+            StateHasChanged();
+            return;
+        }
+
+        if (!double.TryParse(Operator2Text, out var b))
+        {
+            Result = "Invalid second operand";
+            StateHasChanged();
+            return;
+        }
+
+        double computed;
+        switch (Operator)
+        {
+            case "+":
+                computed = calc.Add(a, b);
+                break;
+            case "-":
+                computed = calc.Subtract(a, b);
+                break;
+            case "*":
+                computed = calc.Multiply(a, b);
+                break;
+            case "/":
+                if (b == 0.0)
+                {
+                    Result = "Division by zero";
+                    StateHasChanged();
+                    return;
+                }
+                computed = calc.Divide(a, b);
+                break;
+            default:
+                Result = "Unknown operator";
+                StateHasChanged();
+                return;
+        }
+
+        Result = computed.ToString("G");
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+}
