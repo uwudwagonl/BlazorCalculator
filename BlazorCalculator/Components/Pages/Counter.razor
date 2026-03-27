@@ -5,15 +5,48 @@
 
 <h1>Counter</h1>
 
-<p role="status">Current count: @currentCount</p>
+<p role="status" aria-live="polite">
+    Current count: <strong>@CurrentCount</strong>
+</p>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<div class="btn-group" role="group">
+    <button class="btn btn-primary" @onclick="IncrementAsync">
+        + Increment
+    </button>
+
+    <button class="btn btn-secondary" @onclick="DecrementAsync" disabled="@IsZero">
+        - Decrement
+    </button>
+
+    <button class="btn btn-danger" @onclick="ResetAsync" disabled="@IsZero">
+        Reset
+    </button>
+</div>
 
 @code {
-    private int currentCount = 0;
+    private int CurrentCount { get; set; } = 0;
 
-    private void IncrementCount()
+    private bool IsZero => CurrentCount == 0;
+
+    private Task IncrementAsync()
     {
-        currentCount++;
+        CurrentCount++;
+        return Task.CompletedTask;
+    }
+
+    private Task DecrementAsync()
+    {
+        if (CurrentCount > 0)
+        {
+            CurrentCount--;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task ResetAsync()
+    {
+        CurrentCount = 0;
+        return Task.CompletedTask;
     }
 }
